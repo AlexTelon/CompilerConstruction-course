@@ -1,0 +1,44 @@
+/*
+  \'                       {
+                            column += yyleng;
+                            BEGIN(string);
+                         }
+{
+*/
+/*<string>
+{
+    "\'\'"               {
+                            
+                         }
+    
+    "'"                  {
+                            column++;
+			    yyval.pool_p = sym_tab->pool_install(sym_tab->fix_string(yytext));
+                         }
+
+    [^\n]                {
+			    globalString += yytext[column];
+                            column++;
+			    }
+    \n                   {
+                            yyerror("NewLine not allowed in string");
+                            yyterminate();
+                         }
+    <<EOF>>              {
+                            yyerror("Unterminated string");
+                            yyterminate();
+                         }
+
+}
+*/
+
+
+
+
+{STRINGCONSTANT}           {
+                            yylloc.first_line = yylineno;
+                            yylloc.first_column = column;
+                            column += yyleng;
+                            return T_STRINGCONST;
+                         }
+
