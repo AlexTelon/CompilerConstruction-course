@@ -9,6 +9,8 @@
 // include "ast.hh", "parser.hh" in that order
 
 int column = 0;
+string Global_string = "";
+char * Global_char_array = "";
 
 extern YYLTYPE yylloc; // Used for position information, see below.
 
@@ -158,7 +160,7 @@ regular expressions for the DISEL stuff.
 "<>"                     {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
-                           column += yyleng;
+                            column += yyleng;
                             return T_NOTEQ;
                          }
 of                       {
@@ -237,20 +239,45 @@ procedure                {
                             BEGIN(c_comment);
                          }
 
-[\'].*    {
+[\'] {
   // we get the whole line, make sure to break at next ' but not on ''
   // check for '' -> ' and skipp it
   // check for ' and end.
-  printf("%d length\n", yyleng);
+  yylloc.first_line = yylineno;
+  yylloc.first_column = column;
+  column += yyleng;
+  yymore();
+  BEGIN(string);
 }
 
 
-[\'][.*^\n][^(\'\')\']   {
-			    yylval.pool_p = sym_tab->pool_install(sym_tab->fix_string(yytext));
-			    column += yyleng;
+
+<string>
+{
+
+ "''"                    {
+                            yymore();
+                            column += yyleng;
                          }
 
-
+ "'"                     {
+                            column++;
+			    yylval.pool_p = sym_tab->pool_install(sym_tab->fix_string(yytext));
+			    BEGIN(INITIAL);
+			    return T_STRINGCONST;
+                         }
+ \n                      {
+                            yyerror("Newline not allowed in string");
+                         }
+ <<EOF>>                 {
+                            yyerror("Unterminated string");
+                            yyterminate();
+                         }
+ .                       {
+                            yymore();
+                            column++;
+                         }
+}
 
 
 {IDENTIFIER}             {
