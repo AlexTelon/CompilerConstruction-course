@@ -28,11 +28,11 @@ extern YYLTYPE yylloc; // Used for position information, see below.
 DIGIT [0-9]
 
 /*STRINGCONSTANT '[.^'\n]*'$ */
-   DCOMMENT \{.*\} // works now, is implemented
-   IDENTIFIER [a-zA-Z_][a-zA-Z_0-9]* // works but needs implementation
-   DINTEGER [0-9]+ // is overridden by reals, implemented needed
-   REALS [0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$ // good, but overrides integer, nees implementation
-   WHITESPACE [ \t\r\n\f]+ // no idea, should be good.
+DCOMMENT \{.*\}
+IDENTIFIER [a-zA-Z_][a-zA-Z_0-9]*
+DINTEGER [0-9]+ 
+REALS (([0-9]*\.[0-9]+([eE][-+]?[0-9]+)?)|([0-9]*\.?[0-9]+([eE][-+]?[0-9]+)))
+WHITESPACE [ \t\r\n\f]+
 
 /* {DIGIT}+"."{DIGIT}*
  ID [a-z][a-z0-9]* */
@@ -230,6 +230,14 @@ procedure                {
                             BEGIN(c_comment);
                          }
 
+[\'].*    {
+  // we get the whole line, make sure to break at next ' but not on ''
+  // check for '' -> ' and skipp it
+  // check for ' and end.
+  printf("%d length\n", yyleng);
+}
+
+
 [\'][.*^\n][^(\'\')\']   {
 			    yylval.pool_p = sym_tab->pool_install(sym_tab->fix_string(yytext));
 			    column += yyleng;
@@ -251,16 +259,16 @@ procedure                {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
-			    printf("INTEGER DUUUDE\n");
                             return T_INTNUM;
                          }
+
 {REALS}                  {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
-			    printf("DUUUDE ITS SO REAL\n");
                             return T_REALNUM;
                          }
+
 {WHITESPACE}             {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
