@@ -12,6 +12,15 @@ int column = 0;
 
 extern YYLTYPE yylloc; // Used for position information, see below.
 
+
+// used to create a very common few lines
+int type_nr;
+#define SPAM(type_nr)   			\
+ yylloc.first_line = yylineno;			\
+  yylloc.first_column = column;			\
+  column += yyleng;				\
+  return (type_nr);
+
 %}
 
 %option yylineno
@@ -149,73 +158,71 @@ regular expressions for the DISEL stuff.
 "<>"                     {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
-                            column += yyleng;
+                           column += yyleng;
                             return T_NOTEQ;
                          }
-
-
 of                       {
-                            
+                            SPAM(T_OF);
                          }
 if                       {
-                            
+                            SPAM(T_IF);
                          }
 do                       {
-                            
+                            SPAM(T_DO);
                          }
 or                       {
-                            
+                            SPAM(T_OR);                            
                          }
 var                      {
-                            
+                            SPAM(T_VAR);                            
                          }
 end                      {
-                            
+                            SPAM(T_END);                                                        
                          }
 and                      {
-                            
+                            SPAM(T_AND);
                          }
 div                      {
-                            
+                            SPAM(T_RDIV);
                          }
 mod                      {
-                            
+                            SPAM(T_MOD);
                          }
 not                      {
-                            
+                            SPAM(T_NOT);
                          }
 then                     {
-                            
+                            SPAM(T_THEN);
                          }
 else                     {
-                            
+                            SPAM(T_ELSE);
                          }
 const                    {
-                            
+                            SPAM(T_CONST);
                          }
 array                    {
-                            
+                            SPAM(T_ARRAY);
                          }
 begin                    {
-                            
+                            SPAM(T_BEGIN);
                          }
 while                    {
-                            
+                            SPAM(T_WHILE);
                          }
 elsif                    {
-                            
+                            SPAM(T_ELSIF);
                          }
 return                   {
-                            
+                            SPAM(T_RETURN);
                          }
 program                  {
-                            
+                            SPAM(T_PROGRAM);
                          }
 function                 {
-                            
+                            SPAM(T_FUNCTION);
                          }
 procedure                {
-                            
+                            SPAM(T_PROCEDURE);
                          }
 
 
