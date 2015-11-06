@@ -1,2 +1,5 @@
 *.o
 *~
+scan/scanner
+scan/scanner.cc
+*#
