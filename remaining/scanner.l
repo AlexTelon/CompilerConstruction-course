@@ -9,8 +9,6 @@
 // include "ast.hh", "parser.hh" in that order
 
 int column = 0;
-string Global_string = "";
-char * Global_char_array = "";
 
 extern YYLTYPE yylloc; // Used for position information, see below.
 
@@ -39,11 +37,11 @@ int type_nr;
 DIGIT [0-9]
 
 /*STRINGCONSTANT '[.^'\n]*'$ */
-DCOMMENT \{.*\}
+/*DCOMMENT \{((.|\n)^\})*\}*/
 IDENTIFIER [a-zA-Z_][a-zA-Z_0-9]*
-DINTEGER [0-9]+ 
+INTEGER [0-9]+ 
 REALS (([0-9]*\.[0-9]+([eE][-+]?[0-9]+)?)|([0-9]*\.?[0-9]+([eE][-+]?[0-9]+)))
-WHITESPACE [ \t\r\n\f]+
+WHITESPACE [ \t\r\f]+
 
 /* {DIGIT}+"."{DIGIT}*
  ID [a-z][a-z0-9]* */
@@ -226,17 +224,19 @@ function                 {
 procedure                {
                             SPAM(T_PROCEDURE);
                          }
-
-
-{DCOMMENT}               {
+\{                       {
                             column += yyleng;
+			    BEGIN(disel_comment);
                          }
-
 
 \/\/.*$                  column = 0; /* Skip single-line comment */
 "/\*"                    {
                             column += yyleng;
                             BEGIN(c_comment);
+                         }
+
+\n                       {
+                            column = 0;
                          }
 
 [\'] {
@@ -267,7 +267,9 @@ procedure                {
 			    return T_STRINGCONST;
                          }
  \n                      {
-                            yyerror("Newline not allowed in string");
+                            yyerror("Newline in string");
+			    column = 0;
+			    BEGIN(INITIAL);
                          }
  <<EOF>>                 {
                             yyerror("Unterminated string");
@@ -281,7 +283,7 @@ procedure                {
 
 
 {IDENTIFIER}             {
-                            yylval.pool_p = sym_tab->pool_install(yytext);
+                            yylval.pool_p = sym_tab->pool_install(sym_tab->capitalize(yytext));
                             sym_tab->pool_lookup(yylval.pool_p);
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
@@ -289,10 +291,11 @@ procedure                {
                             return T_IDENT;
                          }
 
-{DINTEGER}               {
+{INTEGER}               {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
+                            yylval.ival = stoi(yytext);
                             return T_INTNUM;
                          }
 
@@ -300,6 +303,7 @@ procedure                {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
+                            yylval.rval = atof(yytext);
                             return T_REALNUM;
                          }
 
