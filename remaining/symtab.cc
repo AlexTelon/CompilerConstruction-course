@@ -531,7 +531,11 @@ sym_index symbol_table::current_environment()
 /* Increase the current_level by one. */
 void symbol_table::open_scope()
 {
-    /* Your code here */
+	/* Your code here */
+	/* Increase current scope and add the correct pointer */
+	current_level++;
+	block_table[current_level] = sym_pos;	
+
 }
 
 
@@ -539,19 +543,62 @@ void symbol_table::open_scope()
 sym_index symbol_table::close_scope()
 {
     /* Your code here */
+	while (sym_pos > block_table[current_level]) {
+		// sym_type type = sym_table->get_symbol_tag(sym_pos);
+		// pool_index p_index = sym_table->get_symbol_id(sym_pos);
+		// sym_type type = sym_table->get_symbol_tag(sym_pos);
+
+		// symbol_table[sym_index]->back_link;
+ 		// hash_index = hash(p_index);
+
+		if (hash_table[sym_table[sym_pos]->back_link] != sym_pos) {
+			cout << "SHOULD NOT HAPPEN??? - close_scope()" << endl;
+			sym_pos--;
+			continue;
+		}
+
+		// move the hash_table link back to the previous thang.
+		hash_table[sym_table[sym_pos]->back_link] = sym_table[sym_pos]->hash_link;
+		
+		// last
+		sym_pos--;
+	}
+	current_level--;
     return NULL_SYM;
 }
 
 
 /*** Main symbol table methods. ***/
 
-/* Return a sym_index to the sought symbol (or 0 if none was found), given
+/* Return a sym_index to the sought symbol (or 0??? (NULL_SYM acording to book) if none was found), given
    a string_pool index. Starts searching in the current block level and
    follows hash links outwards. */
 sym_index symbol_table::lookup_symbol(const pool_index pool_p)
 {
     /* Your code here */
-    return NULL_SYM;
+	// int length = string_pool[pool_p];
+	// char* word = (char*) malloc(length*sizeof(char) + 1); 
+	// for (int i = 0; i < length; i++) {
+	// 	word[i] = string_pool[i+pool_p];
+	// }
+	// word[length] = '\0'; // TODO, are their strings nullterminated
+
+
+	hash_index hash_index = hash(pool_p);
+	sym_index symbol_position = hash_table[hash_index];
+
+	while (symbol_position != NULL_SYM) {
+		   
+	symbol *sym = sym_table[symbol_position];
+	pool_index new_p_index = sym->id;
+
+	if (new_p_index == pool_p) {
+		return symbol_position;
+	}
+	symbol_position = sym->hash_link;
+	}
+
+	return NULL_SYM;
 }
 
 
