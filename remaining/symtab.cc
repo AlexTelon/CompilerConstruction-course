@@ -542,29 +542,24 @@ void symbol_table::open_scope()
 /* Decrease the current_level by one. Return sym_index to new environment. */
 sym_index symbol_table::close_scope()
 {
-    /* Your code here */
-	while (sym_pos > block_table[current_level]) {
-		// sym_type type = sym_table->get_symbol_tag(sym_pos);
-		// pool_index p_index = sym_table->get_symbol_id(sym_pos);
-		// sym_type type = sym_table->get_symbol_tag(sym_pos);
+  /* Your code here */
+  int i = sym_pos;	  
+  while (i > block_table[current_level]) {
+    // make sure we dont break things
+    if (hash_table[sym_table[i]->back_link] != i) {
+      --i;
+      continue;
+    }
 
-		// symbol_table[sym_index]->back_link;
- 		// hash_index = hash(p_index);
-
-		if (hash_table[sym_table[sym_pos]->back_link] != sym_pos) {
-			cout << "SHOULD NOT HAPPEN??? - close_scope()" << endl;
-			sym_pos--;
-			continue;
-		}
-
-		// move the hash_table link back to the previous thang.
-		hash_table[sym_table[sym_pos]->back_link] = sym_table[sym_pos]->hash_link;
-		
-		// last
-		sym_pos--;
-	}
-	current_level--;
-    return NULL_SYM;
+    // move the hash_table link back to the previous thang.
+    hash_table[sym_table[i]->back_link] = sym_table[i]->hash_link;
+    // last
+    //sym_pos--;
+    sym_table[i]->hash_link = NULL_SYM;
+    --i;
+  }
+  current_level--;
+  return NULL_SYM;
 }
 
 
@@ -576,26 +571,27 @@ sym_index symbol_table::close_scope()
 sym_index symbol_table::lookup_symbol(const pool_index pool_p)
 {
     /* Your code here */
-	// int length = string_pool[pool_p];
-	// char* word = (char*) malloc(length*sizeof(char) + 1); 
-	// for (int i = 0; i < length; i++) {
-	// 	word[i] = string_pool[i+pool_p];
-	// }
-	// word[length] = '\0'; // TODO, are their strings nullterminated
-
-
+  
 	hash_index hash_index = hash(pool_p);
 	sym_index symbol_position = hash_table[hash_index];
+	if (symbol_position == NULL_SYM) std::cout << "we fail directly" << endl;
+
+	char* orig = pool_lookup(pool_p);
 
 	while (symbol_position != NULL_SYM) {
 		   
-	symbol *sym = sym_table[symbol_position];
-	pool_index new_p_index = sym->id;
+	  symbol *sym = sym_table[symbol_position];
+	  pool_index new_p_index = sym->id;
+	  
+	  char* tmp = pool_lookup(new_p_index);
 
-	if (new_p_index == pool_p) {
-		return symbol_position;
-	}
-	symbol_position = sym->hash_link;
+	  //	  if (new_p_index == pool_p && sym->level <= current_level) {
+	  if (strcmp(orig,tmp) == 0 && sym->level <= current_level) {
+	    return symbol_position;
+	  }
+
+	  //step forward
+	  symbol_position = sym->hash_link;
 	}
 
 	return NULL_SYM;
@@ -687,8 +683,66 @@ void symbol_table::set_symbol_type(const sym_index sym_p,
 sym_index symbol_table::install_symbol(const pool_index pool_p,
                                        const sym_type tag)
 {
+
+   if (sym_pos + 1 >= MAX_SYM) {
+     fatal("Symtable is full!");
+   }
+
     /* Your code here */
-    return 0; // Return index to the symbol we just created.
+  // create the symbol
+   symbol *sym;
+  switch (tag)
+    {
+    case SYM_VAR:
+      sym = new variable_symbol(pool_p); 
+      break;
+    case SYM_PROC:
+      sym = new procedure_symbol(pool_p); 
+      break;
+    case SYM_FUNC:
+      sym = new function_symbol(pool_p); 
+      break;
+    case SYM_NAMETYPE:
+      sym = new nametype_symbol(pool_p); 
+      break;
+    case SYM_ARRAY:
+      sym = new array_symbol(pool_p); 
+      break;
+    case SYM_PARAM:
+      sym = new parameter_symbol(pool_p); 
+      break;
+    case SYM_CONST:
+      sym = new constant_symbol(pool_p); 
+      break;
+    case SYM_UNDEF:
+      sym = new symbol(pool_p); 
+      break;
+    default:
+      fatal("WEIRD SYMBOL TYPE");
+      }
+
+    // Type: integer_type, real_type, or void_type.
+    // will be overwritten by constant, variables, arrays, parameters and 
+    //functions in their corresponding enter_*
+    sym->type = void_type; 
+
+    hash_index hash_index = hash(pool_p);
+    // Link back to the hash table.
+    sym->back_link = hash_index;
+
+    // reroute our hash_link to point to what the hash_table points to for this hash.
+    // if hash_table is empty(=SYM_NULL) for that hash_index, then our hash_link will be 
+    // SYM_NULL which is intended.
+    sym->hash_link = hash_table[hash_index];
+    hash_table[hash_index] = ++sym_pos; // hash table now points to our new object.
+
+    // Current block level, ie, nesting depth.
+    sym->level = current_level; // function and procedure might want to ++ this.
+
+    // Offset, used in code generation.
+    sym->offset = 0; // its an int, no idea if it should be 0 TODO
+    sym_table[sym_pos] = sym;
+    return sym_pos; // Return index to the symbol we just created.
 }
 
 /* Enter a constant into the symbol table. The value is an integer. The type
@@ -933,7 +987,27 @@ sym_index symbol_table::enter_procedure(position_information *pos,
                                         const pool_index pool_p)
 {
     /* Your code here */
-    return NULL_SYM;
+    sym_index sym_p = install_symbol(pool_p, SYM_PROC);
+    procedure_symbol *proc = sym_table[sym_p]->get_procedure_symbol();
+
+    // Make sure it's not already been declared.
+    if (proc->tag != SYM_UNDEF) {
+        type_error(pos) << "Redeclaration: " << proc << endl;
+        return sym_p; // returns the original symbol
+    }
+
+    // Set up the procedure-specific fields.
+    proc->tag = SYM_PROC;
+    // Parameters are added later on.
+    proc->last_parameter = NULL;
+
+    // This will grow as local variables and temporaries are added.
+    proc->ar_size = 0;
+    proc->label_nr = get_next_label();
+
+    sym_table[sym_p] = proc;
+
+    return sym_p;
 }
 
 

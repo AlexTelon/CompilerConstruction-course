@@ -6,6 +6,9 @@
 // Set this #define to 0 after the scanner works.
 #define TEST_SCANNER 0
 
+// Dont be efficient in the way you remolve stuff from the symbol table
+#define MATCH_OUTPUT 1
+
 /* Just to make the code more readable. Not true new types like in Pascal. */
 typedef long pool_index;
 typedef long hash_index;
