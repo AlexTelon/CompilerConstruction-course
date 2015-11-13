@@ -574,19 +574,19 @@ sym_index symbol_table::lookup_symbol(const pool_index pool_p)
   
 	hash_index hash_index = hash(pool_p);
 	sym_index symbol_position = hash_table[hash_index];
-	if (symbol_position == NULL_SYM) std::cout << "we fail directly" << endl;
 
-	char* orig = pool_lookup(pool_p);
+	//	char* orig = pool_lookup(pool_p);
 
 	while (symbol_position != NULL_SYM) {
 		   
 	  symbol *sym = sym_table[symbol_position];
 	  pool_index new_p_index = sym->id;
 	  
-	  char* tmp = pool_lookup(new_p_index);
+	  //char* tmp = pool_lookup(new_p_index);
 
 	  //	  if (new_p_index == pool_p && sym->level <= current_level) {
-	  if (strcmp(orig,tmp) == 0 && sym->level <= current_level) {
+	  //	  if (strcmp(orig,tmp) == 0 && sym->level <= current_level) {
+	  if (pool_compare(pool_p,new_p_index) && sym->level <= current_level) {
 	    return symbol_position;
 	  }
 
@@ -688,6 +688,20 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
      fatal("Symtable is full!");
    }
 
+	hash_index hash_index = hash(pool_p);
+	sym_index symbol_position = hash_table[hash_index];
+	while (symbol_position != NULL_SYM) {
+	  symbol *tmp_sym = sym_table[symbol_position];
+	  pool_index new_p_index = tmp_sym->id;
+
+	  if (pool_compare(pool_p,new_p_index) && tmp_sym->level == current_level) {
+	    return symbol_position;
+	  }
+
+	  //step forward
+	  symbol_position = tmp_sym->hash_link;
+	}
+
     /* Your code here */
   // create the symbol
    symbol *sym;
@@ -726,7 +740,6 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
     //functions in their corresponding enter_*
     sym->type = void_type; 
 
-    hash_index hash_index = hash(pool_p);
     // Link back to the hash table.
     sym->back_link = hash_index;
 
