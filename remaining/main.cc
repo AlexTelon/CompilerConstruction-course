@@ -12,6 +12,7 @@ using namespace std;
 extern int error_count;
 extern bool yydebug;
 bool assembler_trace = false;
+bool print_egen = false;
 bool print_ast = false;
 bool print_quads = false;
 bool typecheck = true;
@@ -22,7 +23,7 @@ bool assembler = true;
 void usage(char *program_name)
 {
     cerr << "Usage:\n"
-         << program_name << " [-acdfpqsty] inputfile\n"
+         << program_name << " [-acdfpqstyz] inputfile\n"
          << program_name << " [-h?]\n"
          << "Options:\n"
          << "  -h, -?            Shows this message.\n"
@@ -34,14 +35,15 @@ void usage(char *program_name)
          << "  -q                Print quad lists.\n"
          << "  -s                Don't generate assembler code.\n"
          << "  -t                Include trace printouts in assembler code.\n"
-         << "  -y                Print symbol table.\n";
+         << "  -y                Print symbol table.\n"
+         << "  -z                egen debug grej.\n";
     exit(1);
 }
 
 
 int main(int argc, char **argv)
 {
-    char options[] = "acdfpqstyh?";
+    char options[] = "acdfpqstyhz?";
     int option;
     bool print_symtab = false;
 
@@ -89,6 +91,10 @@ int main(int argc, char **argv)
         case 'y':
             cout << "Symbol table will be printed after compilation.\n";
             print_symtab = true;
+            break;
+        case 'z':
+            cout << "EGEN IS ACTIVE\n";
+            print_egen = true;
             break;
         case 'h':
         case '?':

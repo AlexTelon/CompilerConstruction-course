@@ -34,6 +34,7 @@ normal="$(tput sgr0)\e[00m"
 # Some useful variables.
 cppopts=
 debug_flag=
+debug_egen=
 print_symtab_flag=
 print_ast_flag=
 print_quads_flag=
@@ -58,6 +59,8 @@ while [ $# -gt 0 ]; do
     -c)     no_typecheck_flag="-c"
         ;;
     -d)     debug_flag="-d"
+        ;;
+    -z)    debug_egen="-z" # z seems not to be taken
         ;;
     -f)     no_optimized_ast_flag="-f"
         ;;
@@ -108,7 +111,7 @@ if [ ! -f "compiler" ]; then
     exit 1
 fi
 
-compiler_flags="$print_symtab_flag $print_ast_flag $debug_flag $no_typecheck_flag $no_optimized_ast_flag $no_quads_flag $print_quads_flag $no_assembler_flag $trace_flag"
+compiler_flags="$print_symtab_flag $print_ast_flag $debug_flag $no_typecheck_flag $no_optimized_ast_flag $no_quads_flag $print_quads_flag $no_assembler_flag $trace_flag $debug_egen"
 
 # Try to compile. Note that most arguments are passed on as is to the
 # compiler (see main.cc)
