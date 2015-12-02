@@ -452,6 +452,7 @@ func_decl       : func_head opt_param_list T_COLON type_id T_SEMICOLON const_par
                 {
                     /* Your code here, DONE */
 					$$ = $1;
+					sym_tab->set_symbol_type($1->sym_p, $4->sym_p);
                 }
                 ;
 
@@ -545,7 +546,7 @@ param           : T_IDENT T_COLON type_id
                 ;
 
 
-comp_stmt       : T_BEGIN stmt_list T_END
+comp_stmt      : T_BEGIN stmt_list T_END
                 {
                     /* Your code here, DONE */
 					//					$$ = new ast_stmt_list(POS_INFO(@1), NULL, $2); // TODO, right thing?
@@ -557,13 +558,20 @@ comp_stmt       : T_BEGIN stmt_list T_END
 stmt_list       : stmt
                 {
                     /* Your code here, DONE */
-					$$ = new ast_stmt_list(POS_INFO(@1), $1);
+					if($1 != NULL) {
+						$$ = new ast_stmt_list(POS_INFO(@1), $1);
+					}
 				}
                 | stmt_list T_SEMICOLON stmt
                 {
                     /* Your code here, DONE */
 					if($3 != NULL) {
-						$$ = new ast_stmt_list(POS_INFO(@1), $3, $1);
+						/* if($1->last_stmt == NULL){ */
+						/* 	$1->last_stmt = $3; */
+						/* 	$$ = $1; */
+						/* } else { */
+							$$ = new ast_stmt_list(POS_INFO(@1), $3, $1);
+						/* } */
 					}
                 }
                 ;
