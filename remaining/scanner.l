@@ -4,7 +4,7 @@
 #include <string.h>
 
 
-//#include "scanner.hh" - not needed after lab2. (edited out in lab3)
+//#include "scanner.hh" // - not needed after lab2. (edited out in lab3)
 #include "ast.hh"
 #include "parser.hh"
 // This is where you put #include directives as needed for later labs.
