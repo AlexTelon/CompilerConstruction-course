@@ -185,7 +185,7 @@ and                      {
                             SPAM(T_AND);
                          }
 div                      {
-                            SPAM(T_RDIV);
+                            SPAM(T_IDIV);
                          }
 mod                      {
                             SPAM(T_MOD);

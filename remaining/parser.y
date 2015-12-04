@@ -273,7 +273,6 @@ var_decl        : T_IDENT T_COLON type_id T_SEMICOLON
                 | T_IDENT T_COLON T_ARRAY T_LEFTBRACKET integer T_RIGHTBRACKET T_OF type_id T_SEMICOLON
                 {
                     /* Your code here, DONE */
-					// alex : array[1] of TYPE_id;
 					sym_tab->enter_array(POS_INFO(@1),
 										 $1,
 										 $8->sym_p,
