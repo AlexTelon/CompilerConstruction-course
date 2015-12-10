@@ -123,6 +123,8 @@ void ast_elsif_list::optimize()
    method, however. */
 void ast_id::optimize()
 {
+	// cout << "ast_id " << (this->tag == SYM_CONST) << endl;
+	// cout << "a;kdlsjaslkdjasldkjasdlkjasdkljaskdlj" << endl;
 }
 
 void ast_indexed::optimize()
@@ -148,17 +150,70 @@ ast_expression *ast_optimizer::fold_constants(ast_expression *node)
 		long left_int, right_int;
 		double left_real, right_real;
 
+		if(left_type == integer_type){
+			if (binop_node->left->get_ast_id() != NULL) {
+				ast_id *ast_thing = binop_node->left->get_ast_id();
+				symbol* tmp_sym = sym_tab->get_symbol(ast_thing->sym_p);
+				if (tmp_sym->tag == SYM_CONST) {
+					constant_symbol *const_sym = tmp_sym->get_constant_symbol();
+					left_int = const_sym->const_value.ival;
+				}
+			}
+		}
+		if(right_type == integer_type){
+			if (binop_node->right->get_ast_id() != NULL) {
+				ast_id *ast_thing = binop_node->right->get_ast_id();
+				symbol* tmp_sym = sym_tab->get_symbol(ast_thing->sym_p);
+				if (tmp_sym->tag == SYM_CONST) {
+					constant_symbol *const_sym = tmp_sym->get_constant_symbol();
+					right_int = const_sym->const_value.ival;
+				}
+			}
+		}
 
+		if(left_type == real_type){
+			if (binop_node->left->get_ast_id() != NULL) {
+				ast_id *ast_thing = binop_node->left->get_ast_id();
+				symbol* tmp_sym = sym_tab->get_symbol(ast_thing->sym_p);
+				if (tmp_sym->tag == SYM_CONST) {
+					constant_symbol *const_sym = tmp_sym->get_constant_symbol();
+					left_real = const_sym->const_value.rval;
+				}
+			}
+		}
+		if(right_type == real_type){
+			if (binop_node->right->get_ast_id() != NULL) {
+				ast_id *ast_thing = binop_node->right->get_ast_id();
+				symbol* tmp_sym = sym_tab->get_symbol(ast_thing->sym_p);
+				if (tmp_sym->tag == SYM_CONST) {
+					constant_symbol *const_sym = tmp_sym->get_constant_symbol();
+					right_real = const_sym->const_value.rval;
+				}
+			}
+		}
+
+		
 		// need to be int or real to be foldable TODO check ast_id, sida 114
 		if ((left_type != integer_type || left_type != real_type) &&
 			(right_type != integer_type || right_type != real_type)) {
 
 			if (left_type == integer_type) {
-				if(binop_node->left->get_ast_integer() == NULL){
+				if(binop_node->left->get_ast_integer() != NULL){
+					left_int = binop_node->left->get_ast_integer()->value;
+				} else if (binop_node->left->get_ast_id() != NULL) {
+					ast_id *ast_thing = binop_node->left->get_ast_id();
+					symbol* tmp_sym = sym_tab->get_symbol(ast_thing->sym_p);
+					if (tmp_sym->tag == SYM_CONST) {
+						constant_symbol *const_sym = tmp_sym->get_constant_symbol();
+						left_int = const_sym->const_value.ival;
+					} else {
+						return NULL;
+					}
+				} else {
 					return NULL;
 				}
-				left_int = binop_node->left->get_ast_integer()->value;
 				left_real = (double)left_int;
+
 			} else {
 				if(binop_node->left->get_ast_real() == NULL){
 					return NULL;
@@ -178,6 +233,7 @@ ast_expression *ast_optimizer::fold_constants(ast_expression *node)
 				}
 				right_real = binop_node->right->get_ast_real()->value;
 			}
+
 			if (left_type == integer_type && right_type == integer_type) {
 				long retval;
 				switch (binop_node->tag) {
@@ -370,7 +426,6 @@ void ast_assign::optimize()
     /* Your code here */
 	lhs->optimize();
 	rhs->optimize();
-
 	ast_expression* new_ast_right = optimizer->fold_constants(this->rhs);
 	if (new_ast_right != NULL) this->rhs = new_ast_right;
 	
