@@ -130,6 +130,13 @@ sym_index ast_elsif::generate_quads(quad_list &q)
 {
     USE_Q;
     /* Your code here */
+	// something like this, like we've done before. ast_stmt_list here in quads.cc does something similar
+   // if (preceding != NULL) { 
+   //      preceding->generate_quads();
+   //  }
+   //  if (last_elsif != NULL) {
+   //      last_elsif->generate_quads();
+   //  }
     return NULL_SYM;
 }
 
