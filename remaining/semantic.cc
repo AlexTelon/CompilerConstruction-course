@@ -203,7 +203,8 @@ sym_index ast_indexed::type_check()
 		type_error(index->pos) << "index must be of integer "
 							   << "type.\n";
 	}
-    return id->type_check();
+	type = id->type_check();
+	return type;
 }
 
 
@@ -402,7 +403,7 @@ sym_index ast_notequal::type_check()
 							  << "type.\n";
 		return void_type;
 	} else {
-		type = return_type;
+		type = integer_type;
 		return type;
 	}
     return void_type;
@@ -418,7 +419,7 @@ sym_index ast_lessthan::type_check()
 							  << "type.\n";
 		return void_type;
 	} else {
-		type = return_type;
+		type = integer_type;
 		return type;
 	}
     return void_type;
@@ -434,7 +435,7 @@ sym_index ast_greaterthan::type_check()
 							  << "type.\n";
 		return void_type;
 	} else {
-		type = return_type;
+		type = integer_type;
 		return type;
 	}
     return void_type;
@@ -530,6 +531,7 @@ sym_index ast_return::type_check()
     // of semantic.cc.
     has_return = true;
 
+
     // Get the current environment. We don't yet know if it's a procedure or
     // a function.
     symbol *tmp = sym_tab->get_symbol(sym_tab->current_environment());
@@ -597,8 +599,9 @@ sym_index ast_elsif::type_check()
         type_error(condition->pos) << "elsif predicate must be of integer "
                                    << "type.\n";
 	}
-
-	body->type_check();
+	if(body != NULL){
+	  body->type_check();
+	}
 
     return void_type;
 }

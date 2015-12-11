@@ -483,9 +483,11 @@ void ast_not::optimize()
 
 void ast_elsif::optimize()
 {
-    /* Your code here */
-	condition->optimize();
-	body->optimize();
+  /* Your code here */
+  condition->optimize();
+  if(body != NULL){	
+    body->optimize();
+  }
 }
 
 

@@ -171,8 +171,24 @@ long symbol_table::get_next_label()
    an error. This method is used for quad generation. */
 sym_index symbol_table::gen_temp_var(sym_index type)
 {
-    /* Your code here */
-    return NULL_SYM;
+  if(type == void_type){
+    fatal("Void type in gen_temp_var\n");
+  }
+  if(temp_nr>=1000000){
+    cout << "You fail, too many temp vars" << endl;
+    exit(1);
+  }
+  ++temp_nr;
+  char* tmpname = (char*)malloc(sizeof(char)*8);
+  memset(tmpname,'\0',sizeof(char)*8);
+  sprintf(tmpname, "$%ld",temp_nr);
+  printf("gen_temp_var test: %s \n",tmpname);//TODO REMOVE ME
+  pool_index pi = pool_install(tmpname);
+  position_information* posi = new position_information(1337,1447);
+  sym_index sym_i = enter_variable(posi, pi, type);
+  return sym_i;
+  /* Your code here */
+  //return NULL_SYM;
 }
 
 
