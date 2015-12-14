@@ -387,8 +387,8 @@ sym_index ast_equal::type_check()
 							  << "type.\n";
 		return void_type;
 	} else {
-		type = integer_type; // always integer type 
-		return type;
+		type = return_type;
+		return integer_type;
 	}
     return void_type;
 }
@@ -403,8 +403,8 @@ sym_index ast_notequal::type_check()
 							  << "type.\n";
 		return void_type;
 	} else {
-		type = integer_type;
-		return type;
+		type = return_type;
+		return integer_type;
 	}
     return void_type;
 }
@@ -419,8 +419,8 @@ sym_index ast_lessthan::type_check()
 							  << "type.\n";
 		return void_type;
 	} else {
-		type = integer_type;
-		return type;
+		type = return_type;
+		return integer_type;
 	}
     return void_type;
 }
@@ -435,8 +435,8 @@ sym_index ast_greaterthan::type_check()
 							  << "type.\n";
 		return void_type;
 	} else {
-		type = integer_type;
-		return type;
+		type = return_type;
+		return integer_type;
 	}
     return void_type;
 }

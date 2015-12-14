@@ -182,7 +182,11 @@ sym_index symbol_table::gen_temp_var(sym_index type)
   char* tmpname = (char*)malloc(sizeof(char)*8);
   memset(tmpname,'\0',sizeof(char)*8);
   sprintf(tmpname, "$%ld",temp_nr);
-  printf("gen_temp_var test: %s \n",tmpname);//TODO REMOVE ME
+  //  printf("gen_temp_var test: %s \n",tmpname);//TODO REMOVE ME
+  // if(temp_nr == 42){
+  // 	  int* hest = 0;
+  // 	  *hest = 1337;
+  // }
   pool_index pi = pool_install(tmpname);
   position_information* posi = new position_information(1337,1447);
   sym_index sym_i = enter_variable(posi, pi, type);
