@@ -100,6 +100,27 @@ void code_generator::prologue(symbol *new_env)
 
     /* Your code here */
 
+
+    // RSP = stack pointer
+    out << "\t\t" << "push" << "\t" << "rbp" << endl; // store the previous RBP
+    out << "\t\t" << "mov" << "\t" << "rcx, rsp" << endl; // save the previous RSP in a temporary location
+                                                          // this is also this frame's RBP
+
+    // we need a loop here
+    out << "this should be in a loop so we get all the previous RBPs" << endl;
+    out << "\t\t" << "push" << "\t" << "[rbp-8]" << endl;  // display values are copied here (we think this is right)
+ 
+    // while (last_arg != NULL) {
+    //  out << "\t\t" << "push" << "\t" << "[rbp-8]" << endl;
+
+    //   last_arg = last_arg->preceding;
+    // }
+
+    out << "\t\t" << "push" << "\t" << "rcx" << endl; // push the previous RSP on the stack
+    out << "\t\t" << "mov" << "\t" << "rbp, rcx" << endl; // and really make it our new RBP
+    out << "\t\t" << "sub" << "\t" << "rsp, " << ar_size << endl; // allocate space for temporary storage (ar_size correct here?)
+
+
     out << flush;
 }
 
@@ -114,6 +135,8 @@ void code_generator::epilogue(symbol *old_env)
     }
 
     /* Your code here */
+    out << "\t\t" << "leave" << endl; // release activation record
+    out << "\t\t" << "ret" << endl; // return
 
     out << flush;
 }
@@ -124,7 +147,10 @@ void code_generator::epilogue(symbol *old_env)
    array or a parameter. Note the pass-by-pointer arguments. */
 void code_generator::find(sym_index sym_p, int *level, int *offset)
 {
-    /* Your code here */
+  /* Your code here */
+  symbol *s = sym_tab->get_symbol(sym_p);
+  *level = s->level;
+  *offset = s->offset;
 }
 
 /*
@@ -133,6 +159,9 @@ void code_generator::find(sym_index sym_p, int *level, int *offset)
 void code_generator::frame_address(int level, const register_type dest)
 {
     /* Your code here */
+   out << "\t\t" << "push" << "\t" << "" << endl;  // display values are copied here (we think this is right)
+   // Count and find the correct RBP for the level, something like 4*(level+1?) or maybe not +1
+   out << "\t\t" << "mov" << "\t"  << dest << ", [rbp-" << -4-4*level << "]" << endl; 
 }
 
 /* This function fetches the value of a variable or a constant into a
@@ -140,6 +169,27 @@ void code_generator::frame_address(int level, const register_type dest)
 void code_generator::fetch(sym_index sym_p, register_type dest)
 {
     /* Your code here */
+  symbol *s = sym_tab->get_symbol(sym_p);
+  constant_symbol* const_sym;
+  variable_symbol* var_sym;
+  constant_value const_val;
+  
+  //  if (s->type == integer_type || s->type == real_type) {
+  cout << "tag " << s->tag << endl; // DERP HERE WE ARE
+    if (s->tag == SYM_VAR) {
+      var_sym = s->get_variable_symbol();
+      cout << "alkdsjaslkdjasldkjasdklj" << endl;
+      cout << var_sym << endl;
+      int* hest = 0;
+      *hest = 1337;
+
+    } else if (s->tag == SYM_CONST) {
+       const_sym = s->get_constant_symbol();
+       const_val = const_sym->const_value;       
+    } else {
+      fatal("Fetch on a non variable or constant");
+    }
+    //  }
 }
 
 void code_generator::fetch_float(sym_index sym_p)
