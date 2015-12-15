@@ -499,7 +499,6 @@ void ast_elsif_list::generate_quads_and_jump(quad_list &q, int label)
 {
     USE_Q;
     /* Your code here */
-	int else_jmp = sym_tab->get_next_label();
 	if (preceding != NULL) {
 		preceding->generate_quads_and_jump(q, label);
 	}

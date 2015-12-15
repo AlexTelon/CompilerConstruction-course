@@ -150,7 +150,13 @@ void code_generator::find(sym_index sym_p, int *level, int *offset)
   /* Your code here */
   symbol *s = sym_tab->get_symbol(sym_p);
   *level = s->level;
-  *offset = s->offset;
+  // *offset = s->offset - (*level+1)*8;
+  if (s->tag == SYM_PARAM) {
+	  *offset = s->offset + 16;
+  } else {
+	  *offset = -(s->offset) - (*level+1)*8;
+
+  }
 }
 
 /*
@@ -159,9 +165,8 @@ void code_generator::find(sym_index sym_p, int *level, int *offset)
 void code_generator::frame_address(int level, const register_type dest)
 {
     /* Your code here */
-   out << "\t\t" << "push" << "\t" << "" << endl;  // display values are copied here (we think this is right)
-   // Count and find the correct RBP for the level, something like 4*(level+1?) or maybe not +1
-   out << "\t\t" << "mov" << "\t"  << dest << ", [rbp-" << -4-4*level << "]" << endl; 
+   // Count and find the correct RBP for the level, something like 8*(level+1?) or maybe not +1
+   out << "\t\t" << "mov" << "\t"  << reg[dest] << ", [rbp-" << 8*(level+1) << "]" << endl; 
 }
 
 /* This function fetches the value of a variable or a constant into a
@@ -172,29 +177,85 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
   symbol *s = sym_tab->get_symbol(sym_p);
   constant_symbol* const_sym;
   variable_symbol* var_sym;
+  parameter_symbol* param_sym;
   constant_value const_val;
-  
-  //  if (s->type == integer_type || s->type == real_type) {
-  cout << "tag " << s->tag << endl; // DERP HERE WE ARE
-    if (s->tag == SYM_VAR) {
-      var_sym = s->get_variable_symbol();
-      cout << "alkdsjaslkdjasldkjasdklj" << endl;
-      cout << var_sym << endl;
-      int* hest = 0;
-      *hest = 1337;
+  long i;
+  double r;
 
-    } else if (s->tag == SYM_CONST) {
-       const_sym = s->get_constant_symbol();
-       const_val = const_sym->const_value;       
+  // constants have their value directly in the data strucutre.
+  if (s->tag == SYM_CONST ) {
+	  const_sym = s->get_constant_symbol();
+	  const_val = const_sym->const_value;       
+	  if (s->type == integer_type) {
+		  i = const_val.ival;
+	  } else if(s->type == real_type) {
+		  r = const_val.rval;
+		  i = sym_tab->ieee(r);
+	  }
+	  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << i << endl;
+  } else if (s->tag == SYM_VAR || s->tag == SYM_PARAM) {
+	  int level, offset;
+	  
+	  find(sym_p, &level, &offset);
+	  register_type tmp;
+	  if (dest != RCX) {
+		  tmp = RCX ;
+	  } else {
+		  tmp = RAX ;
+	  }
+	  frame_address(level, tmp); // write frame addr to our tmp register
+	  
+	  if (s->tag == SYM_VAR) {
+		  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << "[" << reg[tmp] << " - " << -offset << "]" << endl; 
+	  } else {
+		  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << "[" << reg[tmp] << " + " << offset << "]" << endl; 
+	  }
     } else {
-      fatal("Fetch on a non variable or constant");
+		cout << s << endl;
+      fatal("fetch normal Fetch on a non variable or constant");
     }
-    //  }
 }
 
 void code_generator::fetch_float(sym_index sym_p)
 {
     /* Your code here */
+  symbol *s = sym_tab->get_symbol(sym_p);
+  constant_symbol* const_sym;
+  variable_symbol* var_sym;
+  parameter_symbol* param_sym;
+  constant_value const_val;
+  long i;
+  double r;
+
+  // constants have their value directly in the data strucutre.
+  if (s->tag == SYM_CONST ) {
+	  const_sym = s->get_constant_symbol();
+	  const_val = const_sym->const_value;       
+	  if (s->type == integer_type) {
+		  return;
+	  } else if(s->type == real_type) {
+		  r = const_val.rval;
+		  i = sym_tab->ieee(r);
+	  }
+	  out << "\t\t" << "push" << "\t"  << i << endl; 
+	  out << "\t\t" << "fld" << "\t"  << "[rsp]" << endl;
+	  out << "\t\t" << "add" << "\t"  << "rsp, 8" << endl;
+  }
+    if (s->tag == SYM_VAR || s->tag == SYM_PARAM) {
+	  int level, offset;
+	  
+	  find(sym_p, &level, &offset);
+	  register_type tmp = RCX ;
+	  frame_address(level, tmp); // write frame addr to our tmp register
+
+	  if (s->tag == SYM_VAR) {
+		  out << "\t\t" << "fld" << "\t" <<  "[" << reg[tmp] << " - " << -offset << "]" << endl;
+	  } else {
+		  out << "\t\t" << "fld" << "\t" <<  "[" << reg[tmp] << " + " << offset << "]" << endl;
+	  }
+    } else {
+      fatal("fetch_float Fetch on a non variable or constant");
+    }
 }
 
 
@@ -202,7 +263,20 @@ void code_generator::fetch_float(sym_index sym_p)
 /* This function stores the value of a register into a variable. */
 void code_generator::store(register_type src, sym_index sym_p)
 {
-    /* Your code here */
+	  int level, offset;
+	  find(sym_p, &level, &offset);
+	  register_type tmp;
+	  if (src != RCX) {
+		  tmp = RCX ;
+	  } else {
+		  tmp = RAX ;
+	  }
+	  symbol *s = sym_tab->get_symbol(sym_p); 
+	  if (s->tag == SYM_VAR) {
+		  out << "\t\t" << "mov" << "\t" <<  "[" << reg[tmp] << " - " << -offset << "], " << reg[src] << endl;
+	  } else {
+		  out << "\t\t" << "mov" << "\t" <<  "[" << reg[tmp] << " + " << offset << "], " << reg[src] << endl;
+	  }
 }
 
 void code_generator::store_float(sym_index sym_p)
