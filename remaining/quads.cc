@@ -550,14 +550,16 @@ sym_index ast_if::generate_quads(quad_list &q)
 /* Generate quads for a return statement. */
 sym_index ast_return::generate_quads(quad_list &q)
 {
-    USE_Q;
-    /* Your code here */
-	if (value->type == integer_type){ 
-		q += new quadruple(q_ireturn, q.last_label, value->generate_quads(q), NULL_SYM);
-	} else if (value->type == real_type) {
-		q += new quadruple(q_rreturn, q.last_label, value->generate_quads(q), NULL_SYM);
-	}
-    return NULL_SYM;
+  USE_Q;
+  /* Your code here */
+  if (value != NULL) {
+    if (value->type == integer_type){ 
+      q += new quadruple(q_ireturn, q.last_label, value->generate_quads(q), NULL_SYM);
+    } else if (value->type == real_type) {
+      q += new quadruple(q_rreturn, q.last_label, value->generate_quads(q), NULL_SYM);
+    }
+  }
+  return NULL_SYM;
 }
 
 

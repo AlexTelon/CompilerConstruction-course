@@ -140,6 +140,7 @@ void ast_indexed::optimize()
 ast_expression *ast_optimizer::fold_constants(ast_expression *node)
 {
     /* Your code here */
+  if (node == NULL) return NULL;
 	if (is_binop(node)) { // kinda unneccesary
 		ast_binaryoperation *binop_node = node->get_ast_binaryoperation();
 		if (binop_node == NULL) {
@@ -452,11 +453,13 @@ void ast_if::optimize()
 
 void ast_return::optimize()
 {
-    /* Your code here */
-	value->optimize();
+  /* Your code here */
+  if (value != NULL) {
+    value->optimize();
+  }
 
-	ast_expression* new_ast_value = optimizer->fold_constants(this->value);
-	if (new_ast_value != NULL) this->value = new_ast_value;
+  ast_expression* new_ast_value = optimizer->fold_constants(this->value);
+  if (new_ast_value != NULL) this->value = new_ast_value;
 }
 
 
