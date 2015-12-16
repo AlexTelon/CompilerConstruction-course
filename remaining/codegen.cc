@@ -1,3 +1,7 @@
+// TODO
+// loop in prologue for display thing
+// find thing about - or + in offset for other things than var or param. (array for example)
+
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -208,8 +212,7 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
 	  if (s->tag == SYM_VAR) {
 		  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << "[" << reg[tmp] << " - " << -offset << "]" << endl; 
 	  } else {
-		  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << "[" << reg[tmp] << " + " << offset << "]" << endl; 
-	  }
+		  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << "[" << reg[tmp] << " + " << offset << "]" << endl;	  }
     } else {
 		cout << s << endl;
       fatal("fetch normal Fetch on a non variable or constant");
@@ -282,6 +285,18 @@ void code_generator::store(register_type src, sym_index sym_p)
 void code_generator::store_float(sym_index sym_p)
 {
     /* Your code here */
+	int level, offset;
+	find(sym_p, &level, &offset);
+
+	symbol *s = sym_tab->get_symbol(sym_p);
+	register_type tmp = RCX ;
+	frame_address(level, tmp); // write frame addr to our tmp register
+	  
+	if (s->tag == SYM_VAR) {
+		out << "\t\t" << "fstp" << "\t" << "[" << reg[tmp] << " - " << -offset << "]" << endl; 
+	} else {
+		out << "\t\t" << "fstp" << "\t" << "[" << reg[tmp] << " + " << offset << "]" << endl; 
+	}
 }
 
 
@@ -289,6 +304,18 @@ void code_generator::store_float(sym_index sym_p)
 void code_generator::array_address(sym_index sym_p, register_type dest)
 {
     /* Your code here */
+	int level, offset;
+	find(sym_p, &level, &offset);
+	register_type tmp = RCX ;
+	frame_address(level, tmp); // write frame addr to our tmp register
+	  
+	out << "\t\t" << "mov" << "\t" << dest << ", " << reg[tmp] << endl; 
+
+	if (offset < 0) {
+		out << "\t\t" << "sub" << "\t" << dest << ", " << -offset << endl;
+	} else {
+		out << "\t\t" << "add" << "\t" << dest << ", " << offset << endl;
+	}
 }
 
 /* This method expands a quad_list into assembler code, quad for quad. */
