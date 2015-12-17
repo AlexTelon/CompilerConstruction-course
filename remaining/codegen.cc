@@ -17,6 +17,8 @@ using namespace std;
 // Defined in main.cc.
 extern bool assembler_trace;
 
+bool HYPER_DEBUG = 0;
+
 // Used in parser.y. Ideally the filename should be parametrized, but it's not
 // _that_ important...
 code_generator *code_gen = new code_generator("d.out");
@@ -93,7 +95,7 @@ void code_generator::prologue(symbol *new_env)
     }
 
     /* Print out the label number (a SYM_PROC/ SYM_FUNC attribute) */
-    out << "L" << label_nr << ":" << "\t\t\t" << "# " <<
+    out << "L" << label_nr << ":" << "\t\t\t" << "# " << 
         /* Print out the function/procedure name */
         sym_tab->pool_lookup(new_env->id) << endl;
 
@@ -111,9 +113,17 @@ void code_generator::prologue(symbol *new_env)
                                                           // this is also this frame's RBP
 
     // we need a loop here
-    out << "this should be in a loop so we get all the previous RBPs" << endl;
-    out << "\t\t" << "push" << "\t" << "[rbp-8]" << endl;  // display values are copied here (we think this is right)
- 
+	//    out << "this should be in a loop so we get all the previous RBPs" << endl;
+	for (int i = 1; i <= new_env->level; ++i) {
+		// display values are copied here (we think this is right)
+		out << "\t\t" << "push" << "\t" << "[rbp-" << 8*i << "]" << endl;
+	}
+	// read stuff betwen RBP (the previous one should be the new current one after a return)
+	// so between RBP and our current address (we should be at return or something?
+	// out << " RBP " << rbp << endl; // runtime things!! :(
+	// out << " RSP " << rsp << endl;
+	
+	
     // while (last_arg != NULL) {
     //  out << "\t\t" << "push" << "\t" << "[rbp-8]" << endl;
 
@@ -124,7 +134,7 @@ void code_generator::prologue(symbol *new_env)
     out << "\t\t" << "mov" << "\t" << "rbp, rcx" << endl; // and really make it our new RBP
     out << "\t\t" << "sub" << "\t" << "rsp, " << ar_size << endl; // allocate space for temporary storage (ar_size correct here?)
 
-
+	if (HYPER_DEBUG) out << "#ending prologue" << endl;
     out << flush;
 }
 
@@ -168,9 +178,11 @@ void code_generator::find(sym_index sym_p, int *level, int *offset)
  */
 void code_generator::frame_address(int level, const register_type dest)
 {
+	if (assembler_trace) { out << "#begin frame_address" << endl; }
     /* Your code here */
-   // Count and find the correct RBP for the level, something like 8*(level+1?) or maybe not +1
-   out << "\t\t" << "mov" << "\t"  << reg[dest] << ", [rbp-" << 8*(level+1) << "]" << endl; 
+   // Count and find the correct RBP for the level, something like 8*(level?) or maybe not +1
+   out << "\t\t" << "mov" << "\t"  << reg[dest] << ", [rbp-" << 8*(level) << "]" << endl; 
+	if (assembler_trace) { out << "#end frame_address" << endl; }
 }
 
 /* This function fetches the value of a variable or a constant into a
@@ -178,6 +190,7 @@ void code_generator::frame_address(int level, const register_type dest)
 void code_generator::fetch(sym_index sym_p, register_type dest)
 {
     /* Your code here */
+	if (assembler_trace) { out << "#begin fetch" << endl; }
   symbol *s = sym_tab->get_symbol(sym_p);
   constant_symbol* const_sym;
   variable_symbol* var_sym;
@@ -201,12 +214,7 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
 	  int level, offset;
 	  
 	  find(sym_p, &level, &offset);
-	  register_type tmp;
-	  if (dest != RCX) {
-		  tmp = RCX ;
-	  } else {
-		  tmp = RAX ;
-	  }
+	  register_type tmp = RCX;
 	  frame_address(level, tmp); // write frame addr to our tmp register
 	  
 	  if (s->tag == SYM_VAR) {
@@ -217,6 +225,7 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
 		cout << s << endl;
       fatal("fetch normal Fetch on a non variable or constant");
     }
+	if (assembler_trace) { out << "#end fetch" << endl; }
 }
 
 void code_generator::fetch_float(sym_index sym_p)
@@ -231,7 +240,7 @@ void code_generator::fetch_float(sym_index sym_p)
   double r;
 
   // constants have their value directly in the data strucutre.
-  if (s->tag == SYM_CONST ) {
+  if (s->tag == SYM_CONST) {
 	  const_sym = s->get_constant_symbol();
 	  const_val = const_sym->const_value;       
 	  if (s->type == integer_type) {
@@ -240,9 +249,11 @@ void code_generator::fetch_float(sym_index sym_p)
 		  r = const_val.rval;
 		  i = sym_tab->ieee(r);
 	  }
-	  out << "\t\t" << "push" << "\t"  << i << endl; 
-	  out << "\t\t" << "fld" << "\t"  << "[rsp]" << endl;
-	  out << "\t\t" << "add" << "\t"  << "rsp, 8" << endl;
+	  out << "\t\t" << "mov" << "\t" << "rax, " << i << endl; 
+	  out << "\t\t" << "push" << "\t" << "rax" << endl; 
+	  out << "\t\t" << "fld" << "\t" << "qword ptr [rsp]" << endl;
+	  out << "\t\t" << "add" << "\t" << "rsp, 8" << endl;
+	  return;
   }
     if (s->tag == SYM_VAR || s->tag == SYM_PARAM) {
 	  int level, offset;
@@ -252,9 +263,9 @@ void code_generator::fetch_float(sym_index sym_p)
 	  frame_address(level, tmp); // write frame addr to our tmp register
 
 	  if (s->tag == SYM_VAR) {
-		  out << "\t\t" << "fld" << "\t" <<  "[" << reg[tmp] << "-" << -offset << "]" << endl;
+		  out << "\t\t" << "fld" << "\t" <<  "qword ptr [" << reg[tmp] << "-" << -offset << "]" << endl;
 	  } else {
-		  out << "\t\t" << "fld" << "\t" <<  "[" << reg[tmp] << "+" << offset << "]" << endl;
+		  out << "\t\t" << "fld" << "\t" <<  "qword ptr [" << reg[tmp] << "+" << offset << "]" << endl;
 	  }
     } else {
       fatal("fetch_float Fetch on a non variable or constant");
@@ -266,6 +277,7 @@ void code_generator::fetch_float(sym_index sym_p)
 /* This function stores the value of a register into a variable. */
 void code_generator::store(register_type src, sym_index sym_p)
 {
+	if (assembler_trace) { out << "#begin store" << endl; }
 	  int level, offset;
 	  find(sym_p, &level, &offset);
 	  register_type tmp;
@@ -275,11 +287,14 @@ void code_generator::store(register_type src, sym_index sym_p)
 		  tmp = RAX ;
 	  }
 	  symbol *s = sym_tab->get_symbol(sym_p); 
+	  frame_address(level, tmp); // write frame addr to our tmp register
+
 	  if (s->tag == SYM_VAR) {
-		  out << "\t\t" << "mov" << "\t" <<  "[" << reg[tmp] << " - " << -offset << "], " << reg[src] << endl;
+		  out << "\t\t" << "mov" << "\t" <<  "[" << reg[tmp] << "-" << -offset << "], " << reg[src] << endl;
 	  } else {
-		  out << "\t\t" << "mov" << "\t" <<  "[" << reg[tmp] << " + " << offset << "], " << reg[src] << endl;
+		  out << "\t\t" << "mov" << "\t" <<  "[" << reg[tmp] << "+" << offset << "], " << reg[src] << endl;
 	  }
+	if (assembler_trace) { out << "#end store" << endl; }
 }
 
 void code_generator::store_float(sym_index sym_p)
@@ -291,11 +306,11 @@ void code_generator::store_float(sym_index sym_p)
 	symbol *s = sym_tab->get_symbol(sym_p);
 	register_type tmp = RCX ;
 	frame_address(level, tmp); // write frame addr to our tmp register
-	  
+	
 	if (s->tag == SYM_VAR) {
-		out << "\t\t" << "fstp" << "\t" << "[" << reg[tmp] << " - " << -offset << "]" << endl; 
+		out << "\t\t" << "fstp" << "\t" << "qword ptr [" << reg[tmp] << "-" << -offset << "]" << endl; 
 	} else {
-		out << "\t\t" << "fstp" << "\t" << "[" << reg[tmp] << " + " << offset << "]" << endl; 
+		out << "\t\t" << "fstp" << "\t" << "qword ptr [" << reg[tmp] << "+" << offset << "]" << endl; 
 	}
 }
 
@@ -304,18 +319,20 @@ void code_generator::store_float(sym_index sym_p)
 void code_generator::array_address(sym_index sym_p, register_type dest)
 {
     /* Your code here */
+	if (assembler_trace) { out << "#begin array_address" << endl; }
 	int level, offset;
 	find(sym_p, &level, &offset);
 	register_type tmp = RCX ;
 	frame_address(level, tmp); // write frame addr to our tmp register
 	  
-	out << "\t\t" << "mov" << "\t" << dest << ", " << reg[tmp] << endl; 
+	out << "\t\t" << "mov" << "\t" << reg[dest] << ", " << reg[tmp] << endl; 
 
 	if (offset < 0) {
-		out << "\t\t" << "sub" << "\t" << dest << ", " << -offset << endl;
+		out << "\t\t" << "sub" << "\t" << reg[dest] << ", " << -offset << endl;
 	} else {
-		out << "\t\t" << "add" << "\t" << dest << ", " << offset << endl;
+		out << "\t\t" << "add" << "\t" << reg[dest] << ", " << offset << endl;
 	}
+	if (assembler_trace) { out << "#end array_address" << endl; }
 }
 
 /* This method expands a quad_list into assembler code, quad for quad. */
@@ -667,24 +684,51 @@ void code_generator::expand(quad_list *q_list)
 
         case q_param: {
             /* Your code here */
+			if (HYPER_DEBUG) out << "# q_param begin" << endl;
             fetch(q->sym1, RAX);
 			out << "\t\t" << "push" << "\t" << "rax" << endl;
             break;
 		}
         case q_call: {
+			if (HYPER_DEBUG) out << "# q_call begin" << endl;
+			// Used to count parameters.
+			parameter_symbol *last_arg;
+
             /* Your code here */
-			//fetch(q->sym1, RAX); // what to call
+			//			fetch(q->sym1, RAX); // what to call
+			//fetch(q->int1, RAX); // what to call
 			//            fetch(q->int2, RCX); //no. param
 			//			fetch(q->sym3, RDX); // return addr
+			symbol *s = sym_tab->get_symbol(q->sym1);
+			int label_nr;
+			if (s->tag == SYM_PROC) {
+				procedure_symbol *proc = s->get_procedure_symbol();
+				label_nr = proc->label_nr;
+			} else if (s->tag == SYM_FUNC) {
+				function_symbol *func = s->get_function_symbol();
+				label_nr = func->label_nr;
+			} else {
+				fatal("code_generator::expand() for q_call called for non-proc/func");
+				return;
+			}
 			if (q->sym3 == NULL_SYM) {
-				out << "\t\t" << "call" << "\t" << "rax" << endl; // make the call
+				out << "\t\t" << "call" << "\t" << "L" << label_nr
+					<< "\t" << "# " << sym_tab->pool_lookup(s->id) << endl; // make the call
+
+				out << "\t\t" << "add" << "\t" << "rsp, " << 8*q->int2 << endl; // store the return (in rax) to the return address
 				break;
 			}
-			out << "\t\t" << "push" << "\t" << "rdx" << endl; // push ret addr to stack
-			out << "\t\t" << "call" << "\t" << "rax" << endl; // make the call
-			//			out << "\t\t" << "mov" << "\t" << "rax, [rdx]" << endl; // store 
-			out << "\t\t" << "mov" << "\t" << "[rdx], rax" << endl; // store the return (in rax) to the return address
-			//			out << "\t\t" << "CALL THINGS" << "\t" << "[rdx], rax" << endl; // store the return (in rax) to the return address		
+			//			out << "\t\t" << "push" << "\t" << "rdx" << endl; // push ret addr to stack
+			out << "\t\t" << "call" << "\t" << "L" << label_nr
+				<< "\t" << "# " << sym_tab->pool_lookup(s->id) << endl; // make the call
+			//			out << "\t\t" << "mov" << "\t" << "rax, [rdx]" << endl; // store
+			out << "\t\t" << "add" << "\t" << "rsp, " << 8*q->int2 << endl; // store the return (in rax) to the return address
+			if (s->tag == SYM_FUNC) {
+				store(RAX, q->sym3);			
+				// basically should do something like this
+				//			out << "\t\t" << "mov" << "\t" << "[rdx], rax" << endl; // store the return (in rax) to the return address
+			}
+
             break;
         }
         case q_rreturn:

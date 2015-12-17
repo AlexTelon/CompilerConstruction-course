@@ -161,6 +161,10 @@ long symbol_table::get_next_label()
 {
     // Labels start on -1 (which is the global level, meaning that all labels
     // generated for user-defined functions etc start with 0).
+	// if(label_nr == 7){
+	// 	int* hest = 0;
+	// 	*hest = 0;
+	// }
     return label_nr++;
 }
 

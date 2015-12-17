@@ -297,7 +297,7 @@ procedure                {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
-                            yylval.ival = stoi(yytext);
+                            yylval.ival = atol(yytext);
                             return T_INTNUM;
                          }
 
@@ -305,7 +305,7 @@ procedure                {
                             yylloc.first_line = yylineno;
                             yylloc.first_column = column;
                             column += yyleng;
-                            yylval.rval = atof(yytext);
+                            yylval.rval = stod(yytext);
                             return T_REALNUM;
                          }
 

@@ -195,7 +195,10 @@ sym_index ast_real::generate_quads(quad_list &q)
 {
     /* Your code here */
     sym_index result = sym_tab->gen_temp_var(type);
-    q += new quadruple(q_rload, value, NULL_SYM, result);
+	cout << "ast_real generate quads " << value << " " << sym_tab->ieee(value) << endl;
+	// int *i = 0;
+	// *i = 1;
+    q += new quadruple(q_rload, sym_tab->ieee(value), NULL_SYM, result);
     return result;
 }
 
@@ -222,10 +225,10 @@ sym_index ast_uminus::generate_quads(quad_list &q)
     sym_index result = sym_tab->gen_temp_var(expr->type);
     if(type == integer_type){
       q += new quadruple(q_iuminus, expr->generate_quads(q), NULL_SYM, result);
-    } else if(type == integer_type){
+    } else if(type == real_type){
       q += new quadruple(q_ruminus, expr->generate_quads(q), NULL_SYM, result);
     } else {
-      fatal("Binary operation not integer or real");
+      fatal("unariy uminus operation not integer or real");
     }
     return result;
    /* Your code here */
@@ -515,7 +518,10 @@ sym_index ast_if::generate_quads(quad_list &q)
     /* Your code here */
 
     // We get our label for the jump.
-    int else_jmp = sym_tab->get_next_label();
+	int else_jmp;
+	if (elsif_list != NULL ||  else_body != NULL) {
+		else_jmp = sym_tab->get_next_label();
+	}
     int bottom = sym_tab->get_next_label();
 
     // Generate quads for the condition. After this code is being run, we
@@ -523,13 +529,18 @@ sym_index ast_if::generate_quads(quad_list &q)
     // we want to exit the loop, which is done via a conditional jump to the
     // 'bottom' label.
     sym_index pos = condition->generate_quads(q);
-    q += new quadruple(q_jmpf, else_jmp, pos, NULL_SYM);
-
+	if (elsif_list != NULL ||  else_body != NULL) {
+		q += new quadruple(q_jmpf, else_jmp, pos, NULL_SYM);
+	} else {
+		q += new quadruple(q_jmpf, bottom, pos, NULL_SYM);
+	}
     // Generate quads for the body.
     pos = body->generate_quads(q);
-
-    q += new quadruple(q_jmp, bottom, NULL_SYM, NULL_SYM);
-	q += new quadruple(q_labl, else_jmp, NULL_SYM, NULL_SYM);
+   
+	if (elsif_list != NULL ||  else_body != NULL) {
+		q += new quadruple(q_jmp, bottom, NULL_SYM, NULL_SYM);
+		q += new quadruple(q_labl, else_jmp, NULL_SYM, NULL_SYM);
+	}
 
 	if (elsif_list != NULL) {
 		elsif_list->generate_quads_and_jump(q, bottom);
@@ -556,7 +567,9 @@ sym_index ast_return::generate_quads(quad_list &q)
       q += new quadruple(q_ireturn, q.last_label, value->generate_quads(q), NULL_SYM);
     } else if (value->type == real_type) {
       q += new quadruple(q_rreturn, q.last_label, value->generate_quads(q), NULL_SYM);
-    }
+    } 
+  } else {
+	  q += new quadruple(q_jmp, q.last_label, NULL_SYM, NULL_SYM);
   }
   return NULL_SYM;
 }
