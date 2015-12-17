@@ -570,7 +570,9 @@ stmt_list       : stmt
 						/* 	$$ = $1; */
 						/* } else { */
 							$$ = new ast_stmt_list(POS_INFO(@1), $3, $1);
-						/* } */
+							/* } */
+					} else {
+						$$ = $1;
 					}
                 }
                 ;
