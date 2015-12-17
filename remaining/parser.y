@@ -612,6 +612,11 @@ stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                     /* Your code here, DONE */
 					$$ = NULL; // no idea here.. TODO
                 }
+                
+                | error
+                {
+					$$ = NULL; // no idea here.. TODO
+                }
                 ;
 
 lvariable       : lvar_id
