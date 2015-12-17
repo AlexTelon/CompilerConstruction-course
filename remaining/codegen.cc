@@ -210,9 +210,9 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
 	  frame_address(level, tmp); // write frame addr to our tmp register
 	  
 	  if (s->tag == SYM_VAR) {
-		  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << "[" << reg[tmp] << " - " << -offset << "]" << endl; 
+		  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << "[" << reg[tmp] << "-" << -offset << "]" << endl; 
 	  } else {
-		  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << "[" << reg[tmp] << " + " << offset << "]" << endl;	  }
+		  out << "\t\t" << "mov" << "\t"  << reg[dest] << ", " << "[" << reg[tmp] << "+" << offset << "]" << endl;	  }
     } else {
 		cout << s << endl;
       fatal("fetch normal Fetch on a non variable or constant");
@@ -252,9 +252,9 @@ void code_generator::fetch_float(sym_index sym_p)
 	  frame_address(level, tmp); // write frame addr to our tmp register
 
 	  if (s->tag == SYM_VAR) {
-		  out << "\t\t" << "fld" << "\t" <<  "[" << reg[tmp] << " - " << -offset << "]" << endl;
+		  out << "\t\t" << "fld" << "\t" <<  "[" << reg[tmp] << "-" << -offset << "]" << endl;
 	  } else {
-		  out << "\t\t" << "fld" << "\t" <<  "[" << reg[tmp] << " + " << offset << "]" << endl;
+		  out << "\t\t" << "fld" << "\t" <<  "[" << reg[tmp] << "+" << offset << "]" << endl;
 	  }
     } else {
       fatal("fetch_float Fetch on a non variable or constant");
@@ -665,12 +665,26 @@ void code_generator::expand(quad_list *q_list)
             store(RAX, q->sym3);
             break;
 
-        case q_param:
+        case q_param: {
             /* Your code here */
+            fetch(q->sym1, RAX);
+			out << "\t\t" << "push" << "\t" << "rax" << endl;
             break;
-
+		}
         case q_call: {
             /* Your code here */
+			//fetch(q->sym1, RAX); // what to call
+			//            fetch(q->int2, RCX); //no. param
+			//			fetch(q->sym3, RDX); // return addr
+			if (q->sym3 == NULL_SYM) {
+				out << "\t\t" << "call" << "\t" << "rax" << endl; // make the call
+				break;
+			}
+			out << "\t\t" << "push" << "\t" << "rdx" << endl; // push ret addr to stack
+			out << "\t\t" << "call" << "\t" << "rax" << endl; // make the call
+			//			out << "\t\t" << "mov" << "\t" << "rax, [rdx]" << endl; // store 
+			out << "\t\t" << "mov" << "\t" << "[rdx], rax" << endl; // store the return (in rax) to the return address
+			//			out << "\t\t" << "CALL THINGS" << "\t" << "[rdx], rax" << endl; // store the return (in rax) to the return address		
             break;
         }
         case q_rreturn:
